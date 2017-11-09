@@ -1,0 +1,10 @@
+---
+title: "Example"
+output: html_document
+---
+
+## Something about the course
+
+This course is about data science and how to learn tool which are used in data science. 
+
+My course webpage: [https://zartek.github.io/IODS-project/](https://zartek.github.io/IODS-project/)
