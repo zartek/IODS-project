@@ -1,4 +1,4 @@
-
+#I Creation of the github page
 **About the project**
 
 This is course is about data science and how to become fluent user of tool provided by R. 

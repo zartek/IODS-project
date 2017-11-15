@@ -1,7 +1,97 @@
-# Insert chapter 2 title here
+#II Regression and model validation, Analysis part
 
-*Describe the work you have done this week and summarize your learning.*
+*Mikael Jumppanen 15.11.17*
 
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using  
+
+
+##1. Reading of the data
+First we will read the data which we created in the first section. 
+
+```{r}
+# We will use read.csv to read data to R. In argument section we will tell to function that there is header and separator is comma.
+learning2014 <- read.csv("learning2014.csv", sep = ",", header = T)
+
+head(learning2014)
+```
+
+Data set is based on survey which were done by students. Aim of the survey have been to identify **correlation of learning approaches** and achievements of students in a introductory statistics course. 
+
+> Questions were divided to 4 categories: **deep**, **Surf**, **Stra** and **attitude**. 
+
+* **Deep** category questions  measure **deep learning of approach** of the student towards learning.          
+* **Surf** category questions measure **surface learning approach** of the student towards learning.      
+* **Stra** category questions measure **strategic approach** of the student towards learning.      
+
+## 2. Graphical overview of the data     
+
+Next we will look graphical overview of the data by using GGally and ggplot2 libraries.
+
+```{r}
+# access the GGally and ggplot2 libraries
+library(GGally)
+library(ggplot2)
+
+# create an advanced plot matrix with ggpairs(), alpha value is used to add transparency to the plots. Gender is used as color variable
+p <- ggpairs(learning2014, mapping = aes(col=gender, alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+```
+
+**Function**      
+
+The Creation of the plot took nearly 7 seconds which is relatively long time. Faster performance can be achieved by using R base function `pairs()` 
+
+**Interpretation of the graphics**    
+
+* It seem that data is a bit skewed towards female participants.   
+* Age distribution of the male and female students seems to be similar. Attitude of male students seems to be a bit better. Suprisingly there seems to be strong negative correlation of male students surface learning score and deep learning score. Female students don't have that correlation. Male students also seem to suffer from the **age** more than female students regarding **points**. Otherwise there are no big differences between genders   
+* Older students tend to have less surface learning approach and more strategic learning approach.     
+* There seem to be really strong correlation between **attitude** and **points**   
+* **Deep learning approaches** seem to correlate also a bit between **strategic approaches**  
+* There is negative correlation between **surface learning approach** and **strategic approach**      
+* **Strategic approach** have clearly best correlation after attitude towards better **points**   
+* A bit suprisingly **deep learning** approach doesn't seem to correlate a lot towards better **points**   
+
+## 3. Fitting of the regression model
+
+Based on the graphical inspection of the data I will choose Surf, Stra and Attitude. I would expect them to be statistically significant variables explaining results. 
+
+```{r}
+# Fittin of the model
+
+my_model <- lm(Points~Surf+Stra+Attitude, data=learning2014)
+summary(my_model)
+```
+
+It seems that my guess was wrong there is not statistically significant correlation between **strategic** or **surface learning** approach. There is strong statistically significant correlation between **attitude** and **points**
+
+Let's fit model again without unsignificant explantonary variables
+
+```{r}
+my_model <- lm(Points~Attitude, data=learning2014)
+summary(my_model)
+```
+
+## 4. Data interpretation 
+
+**Attitude** have statistically signiciant correlation with p value < 0.001. Estimate for it is 3.5 which means that if the mean score in attitude changes 1 point it will increase 3.5 points final score based on model. Standard error for it is 0.56. R squared for model is 0.186 which means that **attitude** explains 18% of the variation in the target variable: **points**    
+
+## 5. Model diagnostics
+
+```{r}
+
+# Let's draw diagnostic plots using the plot() function
+
+# We want to draw figures to same picture that is achieved by using par() function
+par(mfrow = c(2,2))
+
+# We want to plot residual vs. fitted values, normal QQ-plot and residual vs leverage (see help(plot.lm))
+plot(my_model, which=c(1,2,5))
+```
+
+* We assume that data is normally distributed and this is assumption seems to be valid based on **Residuals vs Fitted** plot. There are no clear trend but error is distributed to the both sides of the red line. And it seems that there are no pattern in a plot   
+
+* It seems that there are no clear outliers in a data based on leverage vs residuals, so no single value have large impact on model.  
+
+* However it seems that there is some problem in a model with low and high values of the data. Most likely there are not so many people in both ends of the data so the model is not so accurate there and error is not normaly distributed in both ends of the data.
