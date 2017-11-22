@@ -1,0 +1,313 @@
+---
+title: "Chapter3 Logistic regression"
+output: html_notebook
+---
+
+# 2. Read data and brief description
+
+```{r}
+# Let's first get data to R
+
+#alc <- read.csv("data/modified_data.csv")
+alc <- read.csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/alc.txt") 
+alc
+
+```
+
+Brief description of the data:
+
+ - The data consist of two questionaries related to students **alcohol consumption** and **school achievements**.     
+ - The data was collected from two different courses: Mathematics course and portugal course.    
+ - The data includes information about student grades, demographic, social and schol related features      
+ 
+# 3. Variables to study
+ 
+> Aim of the analysis is to study the relationship between high/low alcohol consumption and some other variables      
+
+My own asumption is that there might be correlation between alcohol consumption and:
+
+ - student **sex**, male generally use more alcohol
+ - I would guess that drinking during the week reduces **school achievements** and increases **failures** in a long run.
+ - I would assume that bad **family relatioship** indicate high **alcohol consumption** but would it be predictive? Or just cause.
+ - It would be also interesting to know if parents divorce(**Pstatus**) would increase alchol consumption I would guess that yes. 
+ 
+ 
+ Next couple of plots will be drawn.
+```{r, warning=FALSE}
+library("ggplot2")
+library("dplyr")
+library("tidyr")
+
+g1 <- ggplot(data=alc, aes(x=alc_use)) + geom_bar()
+g1
+
+```
+High use was determined to be over 2. Bar charts seem to decrease almost linearly. 
+
+```{r}
+g2 <- ggplot(data=alc, aes(x=high_use)) + geom_bar()
+g2
+
+
+
+# gather columns int key-value pairs and then plot each pair
+gather(alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_bar()
+```
+According the barcharts it seems that most of the students have passed the courses and come from small families and their family is supporting their studies. Student's seem to also have relatively lot free time and most of them go out with friends. Most of the student's also seem to be singles. 
+
+# 4. Numerical and graphical exploration of the data
+
+## Cohabitation status and course failures      
+ 
+```{r}
+# Let's produce some summary statistics. First we group data based on sex and high_use. And then based on those grouppings summary statistics is generated 
+alc %>% group_by(sex,high_use) %>% summarise(count = n(), mean_grade=mean(G3))
+
+alc %>% group_by(Pstatus,high_use) %>% summarise(count = n(), mean_grade=mean(G3))
+
+
+alc %>% group_by(failures,high_use) %>% summarise(count = n(), mean_grade=mean(G3))
+```
+ 
+ Suprisingly it seems that final grade for females is quite same even if female is **high alcohol user**. For men there is clear difference between two groups. Maybe men drink more if they are high users? 
+
+Our orginal assumption with relation of family status and high_use seem to be incorrect. Suprisingly it seems that students who come from divorced families succeed better in courses. 
+
+It seems that there might be some trend with high use and failure rate from courses.
+
+## Age      
+
+```{r}
+# initialize a plot of high_use and age
+g1 <- ggplot(alc, aes(x = high_use, y = age))
+
+# define the plot as a boxplot and draw it
+g1 + geom_boxplot() + ylab("age")
+
+
+
+```
+It seems that elder students drink more. 
+
+## Relationship status 
+
+Let still check if there is any affect if student is single or in "romantic relationship".
+
+```{r}
+alc %>% group_by(romantic,high_use) %>% summarise(count = n(), mean_grade=mean(G3))
+```
+It seems that there might be something. Romantic relatioship might protect a bit from heavy use but might be bad for your grade.
+
+```{r}
+
+
+g2 <- ggplot(alc, aes(x=high_use, y=G3, col=romantic))
+# define the plot as a boxplot and draw it
+g2 + geom_boxplot() + ggtitle("Student's final grade by alcohol consumption and relatioship status")+ ylab("Final grade")
+```
+
+# Internet      
+
+Another thing which came to my mind is that there might be correlation with internet availability and alcohol use.
+
+```{r}
+alc %>% group_by(internet,high_use) %>% summarise(count = n(), mean_grade=mean(G3))
+```
+```{r}
+g2 <- ggplot(alc, aes(x=high_use, y=G3, col=internet))
+# define the plot as a boxplot and draw it
+g2 + geom_boxplot() + ggtitle("Student's final grade by alcohol consumption and internet availability at home")+ ylab("Final grade")
+```
+# Family relaltion ship
+
+Let's see if there is some correlation with family relatiship and alcohol consumption
+```{r}
+alc %>% group_by(famrel,high_use) %>% summarise(count = n(), mean_grade=mean(G3))
+alc %>%  ggplot( aes(x=famrel)) + geom_bar()
+
+
+```
+
+# Absence and sex
+
+Let's also draw plots drawn in a exercice.  
+```{r}
+# initialize a plot of high_use and G3
+g1 <- ggplot(alc, aes(x = high_use, y = G3))
+
+# define the plot as a boxplot and draw it
+g1 + geom_boxplot() + ylab("grade")
+
+# initialise a plot of high_use and absences
+
+g2 <- ggplot(alc, aes(x=high_use, y=absences, col=sex))
+# define the plot as a boxplot and draw it
+g2 + geom_boxplot() + ggtitle("Student absences by alcohol consumption and sex")
+```
+ It seems that there might be slighty more absence for those students who are heavy users.
+ 
+ 
+#5. Logistic regression model
+
+Let see if statistical methods validates our visual inspection. Binary variable `hig_use`is used as a target variable and explanotary variables are first course failures, parents cohabitation staturs, relationship to family and sex.
+
+```{r}
+# find the model with glm()
+m <- glm(high_use ~ failures + Pstatus+sex+famrel, data = alc, family = "binomial")
+
+# print out a summary of the model
+
+summary(m)
+# print out the coefficients of the model
+
+
+
+```
+It seems that there is statistical significance between failures, sex and family relationships. Let's keep them in a model.
+
+```{r}
+# find the model with glm()
+m <- glm(high_use ~ failures +sex+famrel, data = alc, family = "binomial")
+
+# print out a summary of the model
+
+summary(m)
+# print out the coefficients of the model
+
+```
+
+No we can look at the coefficients of the model and calculate odds ratio(which tell you how strongly presence of  one attribute is associated with the presence of high alcohol use) and coeffidence intervals(which tell which area of the value is considered true) 
+```{r}
+coef(m)
+
+# compute odds ratios (OR)
+OR <- coef(m) %>% exp
+
+# compute confidence intervals (CI)
+CI <- confint(m) %>% exp()
+
+# print out the odds ratios with their confidence intervals
+print(cbind(OR, CI))
+```
+#6. Exploration of predictive power of the model
+
+Let's research predictive power of my model
+```{r}
+# Let's use model which was created in a last step
+m <- glm(high_use ~ failures +sex+famrel, data = alc, family = "binomial")
+# predict() the probability of high_use
+probabilities <- predict(m, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probabilities>0.5)
+
+# see the last ten original classes, predicted probabilities, and class predictions
+select(alc, failures, absences, sex, high_use, probability, prediction) %>% tail(10)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+```
+It seems that model quite good detects when some is not heavy user of alcohol. But quite often doesn't detect heavy user's of alcohol. 
+
+```{r}
+
+
+# initialize a plot of 'high_use' versus 'probability' in 'alc'
+g <- ggplot(alc, aes(x = probability, y = high_use, col=prediction))
+
+# define the geom as points and draw the plot
+g + geom_point() 
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+
+
+```
+
+Tabulate plot confirms this. So quite often when some one is heavy user our model doesn't detect that. 
+
+Let's calculate average number of incorrectly classified observations
+
+```{r}
+# the logistic regression model m and dataset alc with predictions are available
+
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = alc$high_use, prob = alc$probability)
+```
+
+So 29% of the observations were incorrectly assigned. 
+
+Finally let's try crossvalidation
+```{r, warning=FALSE}
+# the logistic regression model m and dataset alc (with predictions) are available
+
+# define a loss function (average prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# compute the average number of wrong predictions in the (training) data
+loss_func(alc$high_use, alc$probability)
+
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+
+For some reason it seems that our model performs worse when crossvalidated with 10fold crossvalidation 28% < 30.1%
+
+Let's try to find better model:
+
+```{r}
+# Let's try to make better model
+m2 <- glm(high_use ~ failures +sex+famrel+internet+romantic+school+age+address+Fedu+Mjob+reason+guardian+traveltime+studytime+schoolsup+famsup+paid+activities+nursery+higher+freetime+goout+health+absences, data = alc, family = "binomial")
+
+summary(m2)
+
+# predict() the probability of high_use
+probabilities <- predict(m2, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = probabilities>0.5)
+
+# see the last ten original classes, predicted probabilities, and class predictions
+select(alc, failures, absences, sex, high_use, probability, prediction) %>% tail(10)
+
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+
+# the logistic regression model m and dataset alc (with predictions) are available
+
+# define a loss function (average prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+
+# compute the average number of wrong predictions in the (training) data
+loss_func(alc$high_use, alc$probability)
+
+# K-fold cross-validation
+library(boot)
+cv <- cv.glm(data = alc, cost = loss_func, glmfit = m2, K = 10)
+
+# average number of wrong predictions in the cross validation
+cv$delta[1]
+```
+It seems that takin more variables in account error can be reduced. 
