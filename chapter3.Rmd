@@ -3,14 +3,15 @@ title: "Chapter3 Logistic regression"
 output: html_notebook
 ---
 
-# 2. Read data and brief description
+# Exercice 3. Logistic regression 
+## 2. Read data and brief description
 
 ```{r}
 # Let's first get data to R
 
 #alc <- read.csv("data/modified_data.csv")
 alc <- read.csv("http://s3.amazonaws.com/assets.datacamp.com/production/course_2218/datasets/alc.txt") 
-alc
+#alc
 
 ```
 
@@ -20,7 +21,7 @@ Brief description of the data:
  - The data was collected from two different courses: Mathematics course and portugal course.    
  - The data includes information about student grades, demographic, social and schol related features      
  
-# 3. Variables to study
+## 3. Variables to study
  
 > Aim of the analysis is to study the relationship between high/low alcohol consumption and some other variables      
 
@@ -55,9 +56,9 @@ gather(alc) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free") + geom_b
 ```
 According the barcharts it seems that most of the students have passed the courses and come from small families and their family is supporting their studies. Student's seem to also have relatively lot free time and most of them go out with friends. Most of the student's also seem to be singles. 
 
-# 4. Numerical and graphical exploration of the data
+## 4. Numerical and graphical exploration of the data
 
-## Cohabitation status and course failures      
+### Cohabitation status and course failures      
  
 ```{r}
 # Let's produce some summary statistics. First we group data based on sex and high_use. And then based on those grouppings summary statistics is generated 
@@ -75,7 +76,7 @@ Our orginal assumption with relation of family status and high_use seem to be in
 
 It seems that there might be some trend with high use and failure rate from courses.
 
-## Age      
+### Age      
 
 ```{r}
 # initialize a plot of high_use and age
@@ -89,7 +90,7 @@ g1 + geom_boxplot() + ylab("age")
 ```
 It seems that elder students drink more. 
 
-## Relationship status 
+### Relationship status 
 
 Let still check if there is any affect if student is single or in "romantic relationship".
 
@@ -106,7 +107,7 @@ g2 <- ggplot(alc, aes(x=high_use, y=G3, col=romantic))
 g2 + geom_boxplot() + ggtitle("Student's final grade by alcohol consumption and relatioship status")+ ylab("Final grade")
 ```
 
-# Internet      
+## Internet      
 
 Another thing which came to my mind is that there might be correlation with internet availability and alcohol use.
 
@@ -118,7 +119,7 @@ g2 <- ggplot(alc, aes(x=high_use, y=G3, col=internet))
 # define the plot as a boxplot and draw it
 g2 + geom_boxplot() + ggtitle("Student's final grade by alcohol consumption and internet availability at home")+ ylab("Final grade")
 ```
-# Family relaltion ship
+## Family relaltion ship
 
 Let's see if there is some correlation with family relatiship and alcohol consumption
 ```{r}
@@ -128,7 +129,7 @@ alc %>%  ggplot( aes(x=famrel)) + geom_bar()
 
 ```
 
-# Absence and sex
+## Absence and sex
 
 Let's also draw plots drawn in a exercice.  
 ```{r}
@@ -147,7 +148,7 @@ g2 + geom_boxplot() + ggtitle("Student absences by alcohol consumption and sex")
  It seems that there might be slighty more absence for those students who are heavy users.
  
  
-#5. Logistic regression model
+##5. Logistic regression model
 
 Let see if statistical methods validates our visual inspection. Binary variable `hig_use`is used as a target variable and explanotary variables are first course failures, parents cohabitation staturs, relationship to family and sex.
 
@@ -189,7 +190,7 @@ CI <- confint(m) %>% exp()
 # print out the odds ratios with their confidence intervals
 print(cbind(OR, CI))
 ```
-#6. Exploration of predictive power of the model
+##6. Exploration of predictive power of the model
 
 Let's research predictive power of my model
 ```{r}
@@ -269,6 +270,7 @@ cv$delta[1]
 
 For some reason it seems that our model performs worse when crossvalidated with 10fold crossvalidation 28% < 30.1%
 
+##7. Bonus
 Let's try to find better model:
 
 ```{r}
