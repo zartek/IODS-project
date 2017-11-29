@@ -1,0 +1,286 @@
+#IV Clustering and classification
+
+*Mikael Jumppanen 15.11.17*
+
+##1. Creation of the rmd file
+
+##2. Reading of the data
+
+```{r}
+library(MASS)
+
+# loading of the data
+data("Boston")
+
+# exploration of the data
+str(Boston)
+dim(Boston)
+
+summary(Boston)
+
+plot(Boston[1:5])
+plot(Boston[6:10])
+```
+
+Boston dataset has 14 varibles and 506 observations. Dataset tells about different areas of boston and includes following variables:       
+
+-   **crim**: per capita crime rate by town.       
+-   **zn**: proportion of residential land zoned for lots over 25,000 sq.ft.    
+-   **indus**: proportion of non-retail business acres per town.     
+-   **chas**: Charles River dummy variable (= 1 if tract bounds river; 0 otherwise). 
+-   **nox**:nitrogen oxides concentration (parts per 10 million). 
+-   **rm**: average number of rooms per dwelling.  
+-   **age**: proportion of owner-occupied units built prior to 1940.     
+-   **dis**: weighted mean of distances to five Boston employment centres.    
+-   **rad**:  index of accessibility to radial highways.       
+-   **tax**: full-value property-tax rate per \$10,000.        
+-   **ptratio**: pupil-teacher ratio by town.     
+-   **black**: 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town.     
+-   **lstat**:lower status of the population (percent).     
+-   **medv**: median value of owner-occupied homes in \$1000s.   
+
+
+##3. Graphical overview of the data
+```{r}
+library("corrplot")
+library("tidyverse")
+summary(Boston)
+
+
+plot(Boston[1:5])
+plot(Boston[6:10])
+# calculate the correlation matrix and round it
+cor_matrix<-cor(Boston) 
+cor_matrix <- cor_matrix %>% round(digits=2)
+# print the correlation matrix
+print(cor_matrix)
+
+# visualize the correlation matrix
+corrplot(cor_matrix, method="circle", type="upper", cl.pos = "b", tl.pos="d", tl.cex=0.6)
+```
+
+Next we will look graphical overview of the data by looking at summaries, drawing x-y plots and correlation plot. When looking summaries it seems to be clear that data needs to be scaled because scaling is totally different between variables. 
+
+There seem to be negative correlation between distance to centers and nitrogen oxygen concentration, industry and proportion of old buildings. 
+
+There seem to be positive correlation between higher paid property tax and accesibility, nitrogen oxygen concentration and proportion of industry.  
+
+There seem to be positive correlation between criminality and accessibility, in addition land taxation value seem to be some effect. There seem to be small negative correlation between amount of black people in the area. 
+
+
+##4. Standadrization of the data
+
+As noted in last part. Data needs to be normalized because scaling is different between variables. In addition we will create categorial variable ´crime´ to categorize crime rates to four different caregories. After that data is divided to training set and test set so that we can see if we can predict in which category different observation from the test set is going to belong. 
+
+```{r}
+
+# center and standardize variables
+boston_scaled <- Boston %>% scale()
+
+
+# summaries of the scaled variables
+summary(boston_scaled)
+
+# class of the boston_scaled object
+class(boston_scaled)
+
+# change the object to data frame
+boston_scaled <- boston_scaled %>% as.data.frame()
+
+# summary of the scaled crime rate
+summary(boston_scaled$crim)
+
+# create a quantile vector of crim and print it
+bins <- quantile(boston_scaled$crim)
+bins
+
+# create a categorical variable 'crime'
+
+crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label=c("low","med_low","med_high","high"))
+
+# look at the table of the new factor crime
+crime
+
+# remove original crim from the dataset
+boston_scaled <- dplyr::select(boston_scaled, -crim)
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
+
+# boston_scaled is available
+
+# number of rows in the Boston dataset 
+n <- nrow(Boston)
+
+# set seed so we get always same results
+
+set.seed(1)
+
+# choose randomly 80% of the rows
+ind <- sample(n,  size = n * 0.8)
+
+# create train set
+train <- boston_scaled[ind,]
+
+# create test set 
+test <- boston_scaled[-ind,]
+
+
+```
+
+##5. Fitting of the linear discriminant analysis on the training set
+
+```{r}
+# linear discriminant analysis
+# by using "." notation we defina that we want to fit all variables
+lda.fit <- lda(crime~., data = train)
+
+# print the lda.fit object
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col =classes, pch=classes)
+lda.arrows(lda.fit, myscale = 2)
+```
+
+It seem that first coefficient LD1 is reponsible of around 96% of the variability between classes and `rad` is most influental variable. 
+
+
+
+```{r}
+
+# save the correct classes from test data
+correct_classes <- test$crime
+
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
+
+
+# predict classes with test data
+lda.pred <- predict(lda.fit, newdata = test)
+
+# cross tabulate the results
+table(correct = correct_classes, predicted = lda.pred$class)
+
+```
+
+It seems that prediction has hard time to differentiate between low and med_lod categories and also med_low from med_high. Good thing seems to be that high crime rate is predicted correctly 19/19 times. It is more intresting to know which areas tend to have more crime than less crime. Maybe better categorisation could be low, med and high?
+
+
+##7. Clusterizatonion
+
+Dataset is standardized which should be done usually when you are using euclidiean distance. There are some cases where you don't do standardization. 
+
+```{r}
+library("GGally")
+data("Boston")
+# center and standardize variables
+boston_scaled <- Boston %>% scale() %>% as.data.frame()
+# euclidean distance matrix
+dist_eu <- dist(boston_scaled)
+
+# look at the summary of the distances
+summary(dist_eu)
+
+# manhattan distance matrix
+dist_man <- dist(boston_scaled, method="manhattan")
+
+# look at the summary of the distances
+summary(dist_man)
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 2)
+
+# plot the Boston dataset with clusters
+pairs(boston_scaled[1:5], col = km$cluster)
+pairs(boston_scaled[5:10], col = km$cluster)
+
+set.seed(123)
+
+# determine the number of clusters
+k_max <- 10
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(Boston, k)$tot.withinss})
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line')
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 2)
+
+# add new column to data frame
+
+boston_scaled <- boston_scaled %>% mutate(cluster=as.factor(as.character(km$cluster)))
+# plot the Boston dataset with clusters
+ggpairs(boston_scaled, mapping = aes(col=cluster, alpha=0.3), lower = list(combo = wrap("facethist", bins = 20)))
+```
+
+Total within sum of squares tells us that best clusterization can be achieved with two clusters.      
+
+
+Managed to do `ggpairs` plot with the clusters need some tweaking because color variable can't be numering in ggplot so I had to change it first character and then factor. It seems that two clusters are divided quite well based on tax and nox variables. 
+
+## Bonus       
+
+
+```{r}
+data("Boston")
+# center and standardize variables
+boston_scaled <- Boston %>% scale() %>% as.data.frame()
+# euclidean distance matrix
+dist_eu <- dist(boston_scaled)
+
+# look at the summary of the distances
+summary(dist_eu)
+
+# manhattan distance matrix
+dist_man <- dist(boston_scaled, method="manhattan")
+
+# look at the summary of the distances
+summary(dist_man)
+
+# k-means clustering
+km <-kmeans(boston_scaled, centers = 4)
+
+boston_scaled <- boston_scaled %>% mutate(cluster=km$cluster)
+
+# linear discriminant analysis
+# by using "." notation we defina that we want to fit all variables
+lda.fit <- lda(cluster~., data = boston_scaled)
+
+# print the lda.fit object
+lda.fit
+
+# the function for lda biplot arrows
+lda.arrows <- function(x, myscale = 1, arrow_heads = 0.1, color = "red", tex = 0.75, choices = c(1,2)){
+  heads <- coef(x)
+  arrows(x0 = 0, y0 = 0, 
+         x1 = myscale * heads[,choices[1]], 
+         y1 = myscale * heads[,choices[2]], col=color, length = arrow_heads)
+  text(myscale * heads[,choices], labels = row.names(heads), 
+       cex = tex, col=color, pos=3)
+}
+
+# target classes as numeric
+classes <- as.numeric(train$crime)
+
+# plot the lda results
+plot(lda.fit, dimen = 2, col =classes, pch=classes)
+lda.arrows(lda.fit, myscale = 2)
+```
+
+This is actually really clever plot. It tells which variables are best for discriminanting different clusters. It seems that `indus` which tells "proportion of non-retail business acres per town" and `rad` which tells "index of accessibility to radial highways." are most influencial linear separators for clusters.  
