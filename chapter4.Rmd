@@ -283,4 +283,6 @@ plot(lda.fit, dimen = 2, col =classes, pch=classes)
 lda.arrows(lda.fit, myscale = 2)
 ```
 
-This is actually really clever plot. It tells which variables are best for discriminanting different clusters. It seems that `indus` which tells "proportion of non-retail business acres per town" and `rad` which tells "index of accessibility to radial highways." are most influencial linear separators for clusters.  
+This is actually really clever plot. It tells which variables are best for discriminanting different clusters. It seems that `indus` which tells "proportion of non-retail business acres per town" and `rad` which tells "index of accessibility to radial highways." are most influencial linear separators for clusters. 
+
+Or actually not. It seems to be totally random. When I rerun script I will get quite different results. Well at least it tells what it for certain cluster differentiating factors.  
