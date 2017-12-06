@@ -1,0 +1,159 @@
+---
+title: "Exercice 5"
+author: "Mikael Jumppanen"
+output: html_document
+---
+
+
+# Exercice 5. Dimensionality reduction techniques
+
+
+## 2. Read data and brief description  
+
+
+```{r}
+human <- read.table("human.csv", row.names = 1, sep=";", header = T, stringsAsFactors = F, dec = ",")
+
+# look at the (column) names of human
+names(human)
+
+# look at the structure of human
+str(human)
+
+dim(human)
+# print out summaries of the variables
+
+summary(human)
+```
+
+
+**The dataset combines several indicators from most countries in the world**
+
+
+**Brief description of the variables**      
+
+- **GNI** = Gross National Income per capita        
+- **Life.Exp** = Life expectancy at birth       
+- **Edu.Exp** = Expected years of schooling        
+- **Mat.Mor** = Maternal mortality ratio        
+- **Ado.Birth** = Adolescent birth rate        
+- **Parli.F** = Percetange of female representatives in parliament
+
+>Variables used to derive variables(**not included**):      
+
+- **Edu2.F** = Proportion of females with at least secondary education 
+- **Edu2.M** = Proportion of males with at least secondary education    
+- **Labo.F** = Proportion of females in the labour force      
+- **Labo.M** = Proportion of males in the labour force       
+
+> Derived variables(included):    
+
+- **Edu2.FM** = Edu2.F / Edu2.M        
+- **Labo.FM** = Labo2.F / Labo2.M 
+
+
+## Garphical overview of the data     
+
+```{r}
+library(GGally)
+library(corrplot)
+library(dplyr)
+
+# visualize the 'human_' variables
+ggpairs(human)
+
+# compute the correlation matrix and visualize it with corrplot
+cor(human) %>% corrplot()
+```
+
+Data seems to be quite well normally distributed except GNI is quite a lot at left side. It seems also that there is two distributions for maternal moralility? Maybe developping countries have their own distribution. 
+
+It seems that maternal mortality ration correlates with women education and expected years of schooling positively with birth rate. 
+
+Longer life is also expected if women education is increased and education generally increased.(or at least it correlates doesn't tell anything about causality)    
+
+# PCA non standardized data and standardized data
+
+```{r}
+# print out summaries of the variables
+summary(human)
+
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human)
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex=c(0.8,1), col=c("grey40", "deeppink2"))
+```
+
+```{r}
+
+# standardize the variables
+human_std <- scale(human)
+
+# print out summaries of the standardized variables
+summary(human_std)
+
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human_std)
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex=c(0.8,1), col=c("grey40", "deeppink2"))
+```
+
+Results are quite different after standadization because in the first plot variables with biggest values have biggest effect. With standardization each variable contributes equally to variation.
+
+```{r}
+# create and print out a summary of pca_human
+s <- summary(pca_human)
+print(s)
+
+# rounded percetanges of variance captured by each PC
+pca_pr <- round(100*s$importance[2, ], digits = 1)
+
+# print out the percentages of variance
+
+print(pca_pr)
+# create object pc_lab to be used as axis labels
+pc_lab <- paste0(names(pca_pr), " (", pca_pr, "%)")
+
+# draw a biplot
+biplot(pca_human, cex = c(0.8, 1), col = c("grey40", "deeppink2"), xlab = paste(pc_lab[1],"General Health"), ylab = paste(pc_lab[2], "Women education"))
+```
+
+## Peronal interpretation       
+
+Variables related to general health explain 50% of the variation of the first principal component and 16.4 % of the variation is exlained by women education in the second principal component.         
+
+
+```{r}
+library("FactoMineR")
+library("tidyr")
+library("ggplot2")
+data(tea)
+# column names to keep in the dataset
+keep_columns <- c("Tea", "How", "how", "sugar", "where", "lunch")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, one_of(keep_columns))
+
+# look at the summaries and structure of the data
+str(tea_time)
+summary(tea_time)
+
+# visualize the dataset
+gather(tea_time) %>% ggplot(aes(value)) + facet_wrap("key", scales = "free")  + geom_bar() + theme(axis.text.x = element_text(angle=45, hjust=1, size=8))
+
+
+# multiple correspondence analysis
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+
+summary(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"), habillage="quali")
+```
+
+                
+It seems that tea shops sell unpackaged tea and chain stores tea bags. Black tea is usually drank without sugar and earl grey with sugar and milk. 

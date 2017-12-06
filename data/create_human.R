@@ -59,7 +59,7 @@ keep <- c("Country", "Edu2.FM", "Labo.FM", "Edu.Exp", "Life.Exp", "GNI", "Mat.Mo
 human_ <- human_ %>% select(one_of(keep))
 
 # in {base} there is na.omit() function which omits rows containing NA. 
-human_ <- human_ %>% na.omit() %>% tbl_df()
+human_ <- human_ %>% na.omit() 
 
 # Remove regions from the dataset: First we need to identify those.
 
@@ -85,4 +85,4 @@ human_ <- human_ %>%  select(-Country)
 
 dim(human_)
 
-write.csv2(human_,"human.csv")
+write.csv2(human_,"human.csv", row.names = T)
